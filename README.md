@@ -17,7 +17,7 @@ Generate animated countdown timer GIFs for presentations, slides, and anywhere y
 ## Installation
 
 ```bash
-git clone https://github.com/zachhammer/gif-timer.git
+git clone https://github.com/iviaxpow3r/gif-timer.git
 cd gif-timer
 pip install -r requirements.txt
 ```

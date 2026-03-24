@@ -18,282 +18,394 @@
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
-    <div class="max-w-5xl mx-auto p-6">
-        <h1 class="text-3xl font-bold mb-8">GIF Timer Generator</h1>
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">GIF Timer Generator</h1>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Controls -->
+            <!-- Left column: form -->
             <div class="space-y-6">
 
-                <!-- Duration -->
-                <div class="bg-gray-800 rounded-lg p-4">
-                    <h2 class="text-lg font-semibold mb-3">Duration</h2>
-                    <div class="flex gap-4 items-center">
+                <!-- Basic Settings -->
+                <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+                    <h2 class="text-lg font-semibold text-gray-200">Basic Settings</h2>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Duration (seconds)</label>
+                        <input id="duration" type="number" value="60" min="1"
+                            class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Style</label>
+                        <select id="style" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                            <option value="digital">Digital</option>
+                            <option value="circular">Circular</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-sm text-gray-400 mb-1">Minutes</label>
-                            <input type="number" id="minutes" value="1" min="0" max="60"
-                                class="w-20 bg-gray-700 rounded px-3 py-2 text-center">
+                            <label class="block text-sm text-gray-400 mb-1">Width (px)</label>
+                            <input id="width" type="number" value="400" min="50"
+                                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                         </div>
-                        <span class="text-2xl mt-5">:</span>
                         <div>
-                            <label class="block text-sm text-gray-400 mb-1">Seconds</label>
-                            <input type="number" id="seconds" value="0" min="0" max="59"
-                                class="w-20 bg-gray-700 rounded px-3 py-2 text-center">
+                            <label class="block text-sm text-gray-400 mb-1">Height (px)</label>
+                            <input id="height" type="number" value="400" min="50"
+                                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">FPS</label>
+                        <input id="fps" type="number" value="1" min="1" max="30"
+                            class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
 
-                <!-- Style -->
-                <div class="bg-gray-800 rounded-lg p-4">
-                    <h2 class="text-lg font-semibold mb-3">Style</h2>
-                    <div class="flex gap-3">
-                        <button onclick="setStyle('digital')" id="btn-digital"
-                            class="flex-1 py-2 px-4 rounded font-medium bg-blue-600">Digital</button>
-                        <button onclick="setStyle('circular')" id="btn-circular"
-                            class="flex-1 py-2 px-4 rounded font-medium bg-gray-700 hover:bg-gray-600">Circular</button>
-                    </div>
-                </div>
+                <!-- Font Settings -->
+                <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+                    <h2 class="text-lg font-semibold text-gray-200">Font</h2>
 
-                <!-- Negative Time -->
-                <div class="bg-gray-800 rounded-lg p-4">
-                    <h2 class="text-lg font-semibold mb-3">Negative Time</h2>
-                    <label class="flex items-center gap-2 mb-3 cursor-pointer">
-                        <input type="checkbox" id="go-negative" class="w-4 h-4" onchange="toggleNegative()">
-                        <span>Continue counting past zero</span>
-                    </label>
-                    <div id="negative-options" class="hidden space-y-3 pl-6">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" id="infinite" class="w-4 h-4" onchange="toggleInfinite()">
-                            <span>Loop forever</span>
-                        </label>
-                        <div id="neg-duration-row" class="flex items-center gap-2">
-                            <label class="text-sm text-gray-400">Negative seconds:</label>
-                            <input type="number" id="negative-duration" value="10" min="1" max="300"
-                                class="w-20 bg-gray-700 rounded px-3 py-2 text-center">
-                        </div>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" id="flash-negative" checked class="w-4 h-4">
-                            <span>Flash when negative</span>
-                        </label>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Font</label>
+                        <select id="font-select" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                            <option value="">Auto (system default)</option>
+                            {% for name, path in fonts.items() %}
+                            <option value="{{ path }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                        <img id="font-preview" src="" alt="" style="display:none; margin-top:8px; border-radius:4px; max-width:100%;">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Font size (0 = auto)</label>
+                        <input id="font-size" type="number" value="0" min="0" max="500"
+                            class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                     </div>
                 </div>
 
                 <!-- Colors -->
-                <div class="bg-gray-800 rounded-lg p-4">
-                    <h2 class="text-lg font-semibold mb-3">Colors</h2>
+                <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+                    <h2 class="text-lg font-semibold text-gray-200">Colors</h2>
+
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm text-gray-400 mb-1">Background</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" id="bg-color" value="#000000"
-                                    class="w-10 h-10 rounded cursor-pointer bg-transparent">
-                                <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                    <input type="checkbox" id="bg-transparent" class="w-3 h-3">
-                                    Transparent
-                                </label>
-                            </div>
+                            <input id="bg-color" type="color" value="#000000"
+                                class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
                         </div>
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">Text</label>
-                            <input type="color" id="fg-color" value="#FFFFFF"
-                                class="w-10 h-10 rounded cursor-pointer bg-transparent">
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">Negative Text</label>
-                            <input type="color" id="negative-color" value="#FF3333"
-                                class="w-10 h-10 rounded cursor-pointer bg-transparent">
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">Flash Color</label>
-                            <div class="flex items-center gap-2">
-                                <input type="color" id="flash-color" value="#000000"
-                                    class="w-10 h-10 rounded cursor-pointer bg-transparent">
-                                <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                    <input type="checkbox" id="flash-transparent" checked class="w-3 h-3">
-                                    Transparent
-                                </label>
-                            </div>
+                        <div class="flex items-end pb-1">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input id="bg-transparent" type="checkbox"
+                                    class="w-4 h-4 rounded accent-blue-500">
+                                <span class="text-sm text-gray-400">Transparent BG</span>
+                            </label>
                         </div>
                     </div>
 
-                    <!-- Circular-specific colors -->
-                    <div id="ring-colors" class="hidden mt-3 pt-3 border-t border-gray-700">
-                        <h3 class="text-sm font-medium text-gray-300 mb-2">Ring Colors</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">Remaining</label>
-                                <input type="color" id="ring-fg-color" value="#00CC66"
-                                    class="w-10 h-10 rounded cursor-pointer bg-transparent">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">Depleted</label>
-                                <input type="color" id="ring-bg-color" value="#333333"
-                                    class="w-10 h-10 rounded cursor-pointer bg-transparent">
-                            </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Text color</label>
+                        <input id="fg-color" type="color" value="#ffffff"
+                            class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                    </div>
+
+                    <div id="ring-colors" class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Ring background</label>
+                            <input id="ring-bg-color" type="color" value="#333333"
+                                class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Ring foreground</label>
+                            <input id="ring-fg-color" type="color" value="#00cc66"
+                                class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
                         </div>
                     </div>
                 </div>
 
-                <!-- Font & Size -->
-                <div class="bg-gray-800 rounded-lg p-4">
-                    <h2 class="text-lg font-semibold mb-3">Font & Size</h2>
-                    <div class="space-y-3">
+                <!-- Threshold Colors -->
+                <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+                    <h2 class="text-lg font-semibold text-gray-200">Warning / Critical Thresholds</h2>
+
+                    <div class="grid grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-sm text-gray-400 mb-1">Font</label>
-                            <select id="font-select" class="w-full bg-gray-700 rounded px-3 py-2">
-                                <option value="">Auto (system default)</option>
-                                {% for name, path in fonts.items() %}
-                                <option value="{{ path }}">{{ name }}</option>
-                                {% endfor %}
-                            </select>
+                            <label class="block text-sm text-gray-400 mb-1">Warning at (s)</label>
+                            <input id="warning-at" type="number" placeholder="e.g. 30" min="0"
+                                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">Font Size</label>
-                                <input type="number" id="font-size" placeholder="Auto" min="10" max="500"
-                                    class="w-full bg-gray-700 rounded px-3 py-2">
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-400 mb-1">GIF Size</label>
-                                <div class="flex items-center gap-1">
-                                    <input type="number" id="gif-width" value="400" min="100" max="2000"
-                                        class="w-20 bg-gray-700 rounded px-2 py-2 text-center">
-                                    <span class="text-gray-400">x</span>
-                                    <input type="number" id="gif-height" value="400" min="100" max="2000"
-                                        class="w-20 bg-gray-700 rounded px-2 py-2 text-center">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Text color</label>
+                            <input id="warning-fg-color" type="color" value="#ffaa00"
+                                class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Ring color</label>
+                            <input id="warning-ring-color" type="color" value="#ffaa00"
+                                class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Critical at (s)</label>
+                            <input id="critical-at" type="number" placeholder="e.g. 10" min="0"
+                                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Text color</label>
+                            <input id="critical-fg-color" type="color" value="#ff3333"
+                                class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Ring color</label>
+                            <input id="critical-ring-color" type="color" value="#ff3333"
+                                class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Negative Time -->
+                <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+                    <h2 class="text-lg font-semibold text-gray-200">Negative Time</h2>
+
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input id="go-negative" type="checkbox"
+                            class="w-4 h-4 rounded accent-blue-500">
+                        <span class="text-sm text-gray-300">Continue past zero</span>
+                    </label>
+
+                    <div id="negative-options" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Continue for (seconds)</label>
+                            <input id="negative-duration" type="number" value="10" min="1"
+                                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Negative time text color</label>
+                            <input id="negative-color" type="color" value="#ff3333"
+                                class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                        </div>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input id="flash-on-negative" type="checkbox" checked
+                                class="w-4 h-4 rounded accent-blue-500">
+                            <span class="text-sm text-gray-300">Flash when negative</span>
+                        </label>
+
+                        <div id="flash-options" class="space-y-3 pl-4 border-l border-gray-600">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-1">Flash color</label>
+                                    <input id="flash-color" type="color" value="#000000"
+                                        class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                                </div>
+                                <div class="flex items-end pb-1">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input id="flash-transparent" type="checkbox" checked
+                                            class="w-4 h-4 rounded accent-blue-500">
+                                        <span class="text-sm text-gray-400">Transparent flash</span>
+                                    </label>
                                 </div>
                             </div>
+
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input id="flash-ring-on-negative" type="checkbox" checked
+                                    class="w-4 h-4 rounded accent-blue-500">
+                                <span class="text-sm text-gray-300">Flash ring too</span>
+                            </label>
+
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Ring flash color (blank = transparent)</label>
+                                <input id="ring-flash-color" type="color" value="#000000"
+                                    class="w-full h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer">
+                            </div>
                         </div>
                     </div>
+
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input id="infinite" type="checkbox"
+                            class="w-4 h-4 rounded accent-blue-500">
+                        <span class="text-sm text-gray-300">Loop infinitely (ignore negative duration)</span>
+                    </label>
                 </div>
 
-                <!-- Generate Button -->
-                <button onclick="generateTimer()" id="generate-btn"
-                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-lg transition">
-                    Generate Timer GIF
+                <!-- Advanced -->
+                <div class="bg-gray-800 rounded-lg p-5 space-y-4">
+                    <h2 class="text-lg font-semibold text-gray-200">Advanced</h2>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input id="auto-trim" type="checkbox"
+                            class="w-4 h-4 rounded accent-blue-500">
+                        <span class="text-sm text-gray-300">Auto-trim identical frames</span>
+                    </label>
+                </div>
+
+                <!-- Generate button -->
+                <button id="generate-btn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                    Generate GIF
                 </button>
             </div>
 
-            <!-- Preview -->
+            <!-- Right column: preview -->
             <div class="space-y-4">
-                <div class="bg-gray-800 rounded-lg p-4">
-                    <h2 class="text-lg font-semibold mb-3">Preview</h2>
-                    <div id="preview-area"
-                        class="checkerboard rounded-lg flex items-center justify-center min-h-[400px]">
-                        <p id="placeholder" class="text-gray-500 text-lg">Click "Generate" to preview</p>
-                        <img id="preview-img" class="hidden max-w-full rounded" alt="Timer preview">
+                <div class="bg-gray-800 rounded-lg p-5">
+                    <h2 class="text-lg font-semibold text-gray-200 mb-4">Preview</h2>
+
+                    <div id="preview-area" class="flex items-center justify-center min-h-64 rounded-lg bg-gray-700">
+                        <p id="preview-placeholder" class="text-gray-500 text-sm">Generated GIF will appear here</p>
+                        <div id="spinner" class="hidden flex-col items-center gap-3">
+                            <svg class="animate-spin h-10 w-10 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span class="text-gray-400 text-sm">Generating...</span>
+                        </div>
+                        <div id="preview-img-wrap" class="hidden checkerboard rounded-lg overflow-hidden">
+                            <img id="preview-img" src="" alt="Generated timer GIF" class="max-w-full">
+                        </div>
                     </div>
-                </div>
-                <div id="download-section" class="hidden">
-                    <a id="download-link" download="timer.gif"
-                        class="block w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-lg text-center transition">
-                        Download GIF
-                    </a>
-                    <p id="file-info" class="text-sm text-gray-400 mt-2 text-center"></p>
-                </div>
-                <div id="loading" class="hidden text-center py-8">
-                    <div class="inline-block w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                    <p class="mt-2 text-gray-400">Generating timer...</p>
+
+                    <div id="download-wrap" class="hidden mt-4">
+                        <a id="download-link" href="#" download="timer.gif"
+                            class="block w-full text-center bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                            Download GIF
+                        </a>
+                    </div>
+
+                    <div id="error-msg" class="hidden mt-4 bg-red-900 border border-red-700 rounded p-3 text-red-300 text-sm"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentStyle = 'digital';
-        let currentBlobUrl = null;
+        // --- Font preview ---
+        document.getElementById('font-select').addEventListener('change', function() {
+            const fontPath = this.value;
+            const img = document.getElementById('font-preview');
+            if (fontPath) {
+                img.src = '/font-preview?font=' + encodeURIComponent(fontPath);
+                img.style.display = 'block';
+            } else {
+                img.src = '';
+                img.style.display = 'none';
+            }
+        });
 
-        function setStyle(style) {
-            currentStyle = style;
-            document.getElementById('btn-digital').className =
-                `flex-1 py-2 px-4 rounded font-medium ${style === 'digital' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`;
-            document.getElementById('btn-circular').className =
-                `flex-1 py-2 px-4 rounded font-medium ${style === 'circular' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`;
-            document.getElementById('ring-colors').classList.toggle('hidden', style !== 'circular');
-        }
+        // --- Conditional visibility ---
+        document.getElementById('go-negative').addEventListener('change', function() {
+            document.getElementById('negative-options').classList.toggle('hidden', !this.checked);
+        });
 
-        function toggleNegative() {
-            const checked = document.getElementById('go-negative').checked;
-            document.getElementById('negative-options').classList.toggle('hidden', !checked);
-        }
+        document.getElementById('flash-on-negative').addEventListener('change', function() {
+            document.getElementById('flash-options').classList.toggle('hidden', !this.checked);
+        });
 
-        function toggleInfinite() {
-            const checked = document.getElementById('infinite').checked;
-            document.getElementById('neg-duration-row').classList.toggle('hidden', checked);
-        }
+        // --- Style toggle: hide ring colors for digital ---
+        document.getElementById('style').addEventListener('change', function() {
+            const isCircular = this.value === 'circular';
+            document.getElementById('ring-colors').classList.toggle('hidden', !isCircular);
+        });
+        // Init
+        document.getElementById('ring-colors').classList.toggle('hidden',
+            document.getElementById('style').value !== 'circular');
 
-        async function generateTimer() {
-            const btn = document.getElementById('generate-btn');
-            const loading = document.getElementById('loading');
-            const previewImg = document.getElementById('preview-img');
-            const placeholder = document.getElementById('placeholder');
-            const downloadSection = document.getElementById('download-section');
+        // --- Generate ---
+        document.getElementById('generate-btn').addEventListener('click', async function() {
+            const btn = this;
+            const spinner = document.getElementById('spinner');
+            const placeholder = document.getElementById('preview-placeholder');
+            const imgWrap = document.getElementById('preview-img-wrap');
+            const downloadWrap = document.getElementById('download-wrap');
+            const errorMsg = document.getElementById('error-msg');
 
+            // Reset state
             btn.disabled = true;
             btn.textContent = 'Generating...';
-            btn.classList.add('opacity-50');
-            loading.classList.remove('hidden');
-            previewImg.classList.add('hidden');
             placeholder.classList.add('hidden');
-            downloadSection.classList.add('hidden');
+            imgWrap.classList.add('hidden');
+            downloadWrap.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            spinner.classList.add('flex');
 
-            const minutes = parseInt(document.getElementById('minutes').value) || 0;
-            const seconds = parseInt(document.getElementById('seconds').value) || 0;
-            const duration = minutes * 60 + seconds;
+            const goNegative = document.getElementById('go-negative').checked;
+            const flashOnNegative = document.getElementById('flash-on-negative').checked;
+            const flashTransparent = document.getElementById('flash-transparent').checked;
+            const warningAt = document.getElementById('warning-at').value;
+            const criticalAt = document.getElementById('critical-at').value;
+            const fontPath = document.getElementById('font-select').value;
+            const fontSizeRaw = parseInt(document.getElementById('font-size').value);
 
-            const data = {
-                duration: duration,
-                style: currentStyle,
-                width: parseInt(document.getElementById('gif-width').value) || 400,
-                height: parseInt(document.getElementById('gif-height').value) || 400,
+            const payload = {
+                duration: parseInt(document.getElementById('duration').value),
+                style: document.getElementById('style').value,
+                width: parseInt(document.getElementById('width').value),
+                height: parseInt(document.getElementById('height').value),
+                fps: parseInt(document.getElementById('fps').value),
+                go_negative: goNegative,
+                infinite: document.getElementById('infinite').checked,
+                negative_duration: goNegative ? parseInt(document.getElementById('negative-duration').value) : 0,
                 bg_color: document.getElementById('bg-color').value,
                 bg_transparent: document.getElementById('bg-transparent').checked,
                 fg_color: document.getElementById('fg-color').value,
                 negative_color: document.getElementById('negative-color').value,
                 ring_bg_color: document.getElementById('ring-bg-color').value,
                 ring_fg_color: document.getElementById('ring-fg-color').value,
-                go_negative: document.getElementById('go-negative').checked,
-                infinite: document.getElementById('infinite').checked,
-                negative_duration: parseInt(document.getElementById('negative-duration').value) || 10,
-                flash_on_negative: document.getElementById('flash-negative').checked,
+                flash_on_negative: flashOnNegative,
                 flash_color: document.getElementById('flash-color').value,
-                flash_transparent: document.getElementById('flash-transparent').checked,
-                font_path: document.getElementById('font-select').value || null,
-                font_size: document.getElementById('font-size').value || null,
+                flash_transparent: flashTransparent,
+                flash_ring_on_negative: document.getElementById('flash-ring-on-negative').checked,
+                ring_flash_color: document.getElementById('ring-flash-color').value || null,
+                auto_trim: document.getElementById('auto-trim').checked,
+                warning_at: warningAt ? parseInt(warningAt) : null,
+                warning_fg_color: warningAt ? document.getElementById('warning-fg-color').value : null,
+                warning_ring_color: warningAt ? document.getElementById('warning-ring-color').value : null,
+                critical_at: criticalAt ? parseInt(criticalAt) : null,
+                critical_fg_color: criticalAt ? document.getElementById('critical-fg-color').value : null,
+                critical_ring_color: criticalAt ? document.getElementById('critical-ring-color').value : null,
+                font_path: fontPath || null,
+                font_size: (fontSizeRaw > 0) ? fontSizeRaw : null,
             };
 
             try {
-                const response = await fetch('/api/generate', {
+                const resp = await fetch('/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
+                    body: JSON.stringify(payload),
                 });
 
-                if (!response.ok) throw new Error('Generation failed');
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    throw new Error(text || `HTTP ${resp.status}`);
+                }
 
-                const blob = await response.blob();
-                if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-                currentBlobUrl = URL.createObjectURL(blob);
-
-                previewImg.src = currentBlobUrl;
-                previewImg.classList.remove('hidden');
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const previewImg = document.getElementById('preview-img');
+                previewImg.src = url;
+                imgWrap.classList.remove('hidden');
 
                 const downloadLink = document.getElementById('download-link');
-                downloadLink.href = currentBlobUrl;
-                downloadLink.download = `timer_${duration}s_${currentStyle}.gif`;
-                downloadSection.classList.remove('hidden');
+                downloadLink.href = url;
+                const dur = payload.duration;
+                const style = payload.style;
+                downloadLink.download = `timer_${dur}s_${style}.gif`;
+                downloadWrap.classList.remove('hidden');
 
-                const sizeKB = (blob.size / 1024).toFixed(1);
-                document.getElementById('file-info').textContent = `${sizeKB} KB`;
             } catch (err) {
-                alert('Error generating timer: ' + err.message);
+                errorMsg.textContent = 'Error: ' + err.message;
+                errorMsg.classList.remove('hidden');
+                placeholder.classList.remove('hidden');
             } finally {
+                spinner.classList.add('hidden');
+                spinner.classList.remove('flex');
                 btn.disabled = false;
-                btn.textContent = 'Generate Timer GIF';
-                btn.classList.remove('opacity-50');
-                loading.classList.add('hidden');
+                btn.textContent = 'Generate GIF';
             }
-        }
+        });
     </script>
 </body>
 </html>
