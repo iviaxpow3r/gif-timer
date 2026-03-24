@@ -82,9 +82,6 @@ with col_controls:
     gif_height = sc2.number_input(
         "Height (px)", min_value=100, max_value=2000, value=default_h
     )
-    gif_height = sc2.number_input(
-        "Height (px)", min_value=100, max_value=2000, value=default_h
-    )
 
     fonts = scan_system_fonts()
     font_options = ["Auto (system default)"] + list(fonts.keys())
