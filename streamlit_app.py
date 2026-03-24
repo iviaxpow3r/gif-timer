@@ -9,6 +9,7 @@ import io
 import json
 import math
 import tempfile
+import subprocess
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageSequence
 import streamlit as st
@@ -17,6 +18,19 @@ from timer_core import generate_timer_gif, scan_system_fonts, resolve_font
 st.set_page_config(page_title="GIF Timer Generator", page_icon="⏱️", layout="wide")
 st.title("⏱️ GIF Timer Generator")
 st.caption("Build animated countdown timers for slides.")
+
+version = "unknown"
+version_path = Path("VERSION")
+if version_path.exists():
+    version = version_path.read_text().strip() or version
+try:
+    commit_count = (
+        subprocess.check_output(["git", "rev-list", "--count", "HEAD"]).decode().strip()
+    )
+    if commit_count.isdigit():
+        version = f"{version}.{commit_count}"
+except Exception:
+    pass
 
 col_controls, col_preview = st.columns([1, 1], gap="large")
 
@@ -478,3 +492,5 @@ with col_preview:
                 """,
                 unsafe_allow_html=True,
             )
+
+st.caption(f"Version {version}")
