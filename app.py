@@ -52,8 +52,10 @@ def api_generate():
 
     duration = int(data.get("duration", 60))
     style = data.get("style", "digital")
-    width = int(data.get("width", 400))
-    height = int(data.get("height", 400))
+    default_width = 480 if style == "digital" else 400
+    default_height = 120 if style == "digital" else 400
+    width = int(data.get("width", default_width))
+    height = int(data.get("height", default_height))
     fps = int(data.get("fps", 1))
 
     # Negative time

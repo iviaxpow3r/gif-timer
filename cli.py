@@ -55,8 +55,8 @@ Examples:
     parser.add_argument(
         "--size",
         type=str,
-        default="400x400",
-        help="Output size as WIDTHxHEIGHT (default: 400x400)",
+        default=None,
+        help="Output size as WIDTHxHEIGHT (e.g., 480x120). Defaults to 480x120 for digital, 400x400 for circular.",
     )
     parser.add_argument(
         "--fps", type=int, default=1, help="Frames per second (default: 1)"
@@ -162,13 +162,16 @@ Examples:
         parser.error("--duration is required")
 
     # Parse size
-    try:
-        w, h = args.size.lower().split("x")
-        width, height = int(w), int(h)
-    except ValueError:
-        parser.error(
-            f"Invalid size format: {args.size}. Use WIDTHxHEIGHT (e.g., 400x400)"
-        )
+    if args.size is None:
+        width, height = None, None
+    else:
+        try:
+            w, h = args.size.lower().split("x")
+            width, height = int(w), int(h)
+        except ValueError:
+            parser.error(
+                f"Invalid size format: {args.size}. Use WIDTHxHEIGHT (e.g., 480x120)"
+            )
 
     negative_duration = args.negative
 

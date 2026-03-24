@@ -46,15 +46,22 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm text-gray-400 mb-1">Width (px)</label>
-                            <input id="width" type="number" value="400" min="50"
+                            <input id="width" type="number" value="480" min="50"
                                 class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                         </div>
                         <div>
                             <label class="block text-sm text-gray-400 mb-1">Height (px)</label>
-                            <input id="height" type="number" value="400" min="50"
+                            <input id="height" type="number" value="120" min="50"
                                 class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
                         </div>
                     </div>
+                    <script>
+                        document.getElementById('style').addEventListener('change', function() {
+                            const isDigital = this.value === 'digital';
+                            document.getElementById('width').value = isDigital ? 480 : 400;
+                            document.getElementById('height').value = isDigital ? 120 : 400;
+                        });
+                    </script>
 
                     <div>
                         <label class="block text-sm text-gray-400 mb-1">FPS</label>

@@ -254,8 +254,8 @@ def generate_timer_gif(
     output_path,
     negative_duration=0,
     style="digital",
-    width=400,
-    height=400,
+    width=None,
+    height=None,
     fps=1,
     bg_color="#000000",
     fg_color="#FFFFFF",
@@ -299,6 +299,12 @@ def generate_timer_gif(
     Returns:
         Path to the generated GIF.
     """
+    # Resolve style-aware defaults for width/height
+    if width is None:
+        width = 480 if style == "digital" else 400
+    if height is None:
+        height = 120 if style == "digital" else 400
+
     frames = []
     frame_durations = []
     frame_ms = int(1000 / fps)

@@ -74,9 +74,16 @@ with col_controls:
     # --- Size & Font ---
     st.subheader("Size & Font")
     sc1, sc2 = st.columns(2)
-    gif_width = sc1.number_input("Width (px)", min_value=100, max_value=2000, value=400)
+    default_w = 480 if style == "digital" else 400
+    default_h = 120 if style == "digital" else 400
+    gif_width = sc1.number_input(
+        "Width (px)", min_value=100, max_value=2000, value=default_w
+    )
     gif_height = sc2.number_input(
-        "Height (px)", min_value=100, max_value=2000, value=400
+        "Height (px)", min_value=100, max_value=2000, value=default_h
+    )
+    gif_height = sc2.number_input(
+        "Height (px)", min_value=100, max_value=2000, value=default_h
     )
 
     fonts = scan_system_fonts()
