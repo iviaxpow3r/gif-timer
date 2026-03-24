@@ -6,9 +6,11 @@ Deploy: push to GitHub, connect at share.streamlit.io
 
 import base64
 import io
+import json
+import math
 import tempfile
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageSequence
 import streamlit as st
 from timer_core import generate_timer_gif, scan_system_fonts, resolve_font
 
@@ -38,38 +40,14 @@ with col_controls:
     flash_on_negative = True
     flash_ring_on_negative = True
     ring_flash_color = None
+    negative_ring_color = None
     negative_color = "#FF3333"
-    flash_transparent = True
     flash_color = "transparent"
 
     if go_negative:
-        negative_duration = st.number_input(
-            "Seconds past zero", min_value=1, max_value=300, value=10
+        negative_duration = int(
+            st.number_input("Seconds past zero", min_value=1, max_value=300, value=10)
         )
-
-        flash_on_negative = st.checkbox("Flash when negative", value=True)
-
-        nc1, nc2 = st.columns(2)
-        negative_color = nc1.color_picker("Negative text color", "#FF3333")
-
-        flash_transparent = nc2.checkbox("Flash to transparent", value=True)
-        flash_color = (
-            "transparent"
-            if flash_transparent
-            else nc2.color_picker("Flash alternate color", "#000000")
-        )
-
-        if style == "circular" and flash_on_negative:
-            flash_ring_on_negative = st.checkbox("Flash ring when negative", value=True)
-            if flash_ring_on_negative:
-                flash_ring_transparent = st.checkbox(
-                    "Ring flash to transparent", value=True
-                )
-                ring_flash_color = (
-                    "transparent"
-                    if flash_ring_transparent
-                    else st.color_picker("Ring flash color", "#000000")
-                )
 
     # --- Size & Font ---
     st.subheader("Size & Font")
@@ -115,65 +93,162 @@ with col_controls:
 
     # --- Colors ---
     st.subheader("Colors")
-    cc1, cc2 = st.columns(2)
-    fg_color = cc1.color_picker("Text / foreground", "#FFFFFF")
 
-    bg_transparent = cc2.checkbox("Transparent background")
-    bg_color = (
-        "#000000" if bg_transparent else cc2.color_picker("Background", "#000000")
-    )
+    # Base colors
+    st.markdown("**Base colors**")
+    c1, c2, c3, c4 = st.columns(4)
+    fg_transparent = c2.checkbox("Transparent foreground")
+    bg_transparent = c4.checkbox("Transparent background")
+    if fg_transparent:
+        c1.color_picker(
+            "Text / foreground", "#FFFFFF", disabled=True, key="fg_disabled"
+        )
+        fg_color = "transparent"
+    else:
+        fg_color = c1.color_picker("Text / foreground", "#FFFFFF")
+    if bg_transparent:
+        c3.color_picker("Background", "#000000", disabled=True, key="bg_disabled")
+        bg_color = "transparent"
+    else:
+        bg_color = c3.color_picker("Background", "#000000")
 
     if style == "circular":
         st.markdown("**Ring colors**")
-        rc1, rc2 = st.columns(2)
-        ring_fg_color = rc1.color_picker("Remaining ring", "#00CC66")
-        ring_bg_transparent = rc2.checkbox("Transparent depleted ring")
-        ring_bg_color = (
-            "transparent"
-            if ring_bg_transparent
-            else rc2.color_picker("Depleted ring", "#333333")
-        )
+        r1, r2, r3, r4 = st.columns(4)
+        ring_fg_transparent = r2.checkbox("Transparent remaining ring")
+        ring_bg_transparent = r4.checkbox("Transparent depleted ring")
+        if ring_fg_transparent:
+            r1.color_picker(
+                "Remaining ring", "#00CC66", disabled=True, key="ring_fg_disabled"
+            )
+            ring_fg_color = "transparent"
+        else:
+            ring_fg_color = r1.color_picker("Remaining ring", "#00CC66")
+        if ring_bg_transparent:
+            r3.color_picker(
+                "Depleted ring", "#333333", disabled=True, key="ring_bg_disabled"
+            )
+            ring_bg_color = "transparent"
+        else:
+            ring_bg_color = r3.color_picker("Depleted ring", "#333333")
     else:
         ring_fg_color = "#00CC66"
         ring_bg_color = "#333333"
 
     # --- Color Transitions ---
     with st.expander("Color Transitions"):
-        ct1, ct2 = st.columns(2)
-        warning_at = ct1.number_input(
-            "Warning threshold (seconds)",
-            min_value=0,
-            max_value=duration,
-            value=0,
-            help="0 = disabled",
-        )
-        critical_at = ct2.number_input(
-            "Critical threshold (seconds)",
-            min_value=0,
-            max_value=duration,
-            value=0,
-            help="0 = disabled",
-        )
+        # Compute percentage-based defaults: warning ~33%, critical ~10%
+        default_warning = max(1, math.ceil(duration * 0.33)) if duration > 0 else 0
+        default_critical = max(1, math.ceil(duration * 0.10)) if duration > 0 else 0
 
         warning_fg_color = None
         warning_ring_color = None
         critical_fg_color = None
         critical_ring_color = None
 
-        if warning_at > 0:
-            st.markdown("**Warning colors**")
-            wfg, wring = st.columns(2)
-            warning_fg_color = wfg.color_picker("Warning text", "#FFA500")
-            warning_ring_color = wring.color_picker("Warning ring", "#FFA500")
+        warn_col, crit_col = st.columns(2)
 
-        if critical_at > 0:
-            st.markdown("**Critical colors**")
-            cfg, cring = st.columns(2)
-            critical_fg_color = cfg.color_picker("Critical text", "#FF0000")
-            critical_ring_color = cring.color_picker("Critical ring", "#FF0000")
+        with warn_col:
+            enable_warning = st.checkbox("Enable warning transition", value=True)
+            warning_at = st.number_input(
+                "Warning threshold (seconds)",
+                min_value=0,
+                max_value=duration if duration > 0 else 1,
+                value=default_warning if enable_warning else 0,
+                help="Seconds remaining when warning colors activate",
+                disabled=not enable_warning,
+            )
+            if enable_warning and warning_at > 0:
+                wfg, wring = st.columns(2)
+                warning_fg_color = wfg.color_picker("Warning text", "#FFA500")
+                warning_ring_color = wring.color_picker("Warning ring", "#FFA500")
 
-        warning_at = warning_at if warning_at > 0 else None
-        critical_at = critical_at if critical_at > 0 else None
+        with crit_col:
+            enable_critical = st.checkbox("Enable critical transition", value=True)
+            critical_at = st.number_input(
+                "Critical threshold (seconds)",
+                min_value=0,
+                max_value=duration if duration > 0 else 1,
+                value=default_critical if enable_critical else 0,
+                help="Seconds remaining when critical colors activate",
+                disabled=not enable_critical,
+            )
+            if enable_critical and critical_at > 0:
+                cfg, cring = st.columns(2)
+                critical_fg_color = cfg.color_picker("Critical text", "#FF0000")
+                critical_ring_color = cring.color_picker("Critical ring", "#FF0000")
+
+        warning_at = warning_at if (enable_warning and warning_at > 0) else None
+        critical_at = critical_at if (enable_critical and critical_at > 0) else None
+
+    if go_negative:
+        st.markdown("**Negative time**")
+        flash_on_negative = st.checkbox("Flash when negative", value=True)
+
+        st.markdown("**Negative text**")
+        nt1, nt2, nt3, nt4 = st.columns(4)
+        neg_transparent = nt2.checkbox("Transparent text (primary)")
+        flash_transparent = nt4.checkbox("Transparent text (flash)", value=True)
+        if neg_transparent:
+            nt1.color_picker(
+                "Text (primary)", "#FF3333", disabled=True, key="neg_disabled"
+            )
+            negative_color = "transparent"
+        else:
+            negative_color = nt1.color_picker("Text (primary)", "#FF3333")
+        if flash_transparent:
+            nt3.color_picker(
+                "Text (flash)", "#000000", disabled=True, key="flash_disabled"
+            )
+            flash_color = "transparent"
+        else:
+            flash_color = nt3.color_picker("Text (flash)", "#000000")
+        if flash_on_negative and not flash_transparent:
+            if (negative_color or "").lower() == (flash_color or "").lower():
+                st.warning(
+                    "Text flash color matches primary text; flash may look static."
+                )
+
+        if style == "circular":
+            st.markdown("**Negative ring**")
+            flash_ring_on_negative = st.checkbox("Flash ring when negative", value=True)
+            nr1, nr2, nr3, nr4 = st.columns(4)
+            neg_ring_transparent = nr2.checkbox("Transparent ring (primary)")
+            ring_flash_transparent = nr4.checkbox(
+                "Transparent ring (flash)", value=True
+            )
+            if neg_ring_transparent:
+                nr1.color_picker(
+                    "Ring (primary)", "#FF3333", disabled=True, key="neg_ring_disabled"
+                )
+                negative_ring_color = "transparent"
+            else:
+                negative_ring_color = nr1.color_picker("Ring (primary)", "#FF3333")
+            if not flash_ring_on_negative:
+                nr3.color_picker(
+                    "Ring (flash)",
+                    "#000000",
+                    disabled=True,
+                    key="ring_flash_disabled",
+                )
+                ring_flash_color = None
+            elif ring_flash_transparent:
+                nr3.color_picker(
+                    "Ring (flash)",
+                    "#000000",
+                    disabled=True,
+                    key="ring_flash_disabled",
+                )
+                ring_flash_color = "transparent"
+            else:
+                ring_flash_color = nr3.color_picker("Ring (flash)", "#000000")
+            if flash_ring_on_negative and not ring_flash_transparent:
+                if (negative_ring_color or "").lower() == (
+                    ring_flash_color or ""
+                ).lower():
+                    st.warning(
+                        "Ring flash color matches primary ring; flash may look static."
+                    )
 
     # --- Generate ---
     st.write("")
@@ -200,6 +275,7 @@ with col_preview:
                     bg_color="transparent" if bg_transparent else bg_color,
                     fg_color=fg_color,
                     negative_color=negative_color,
+                    negative_ring_color=negative_ring_color,
                     ring_bg_color=ring_bg_color,
                     ring_fg_color=ring_fg_color,
                     flash_on_negative=flash_on_negative,
@@ -235,6 +311,87 @@ with col_preview:
             st.session_state["gif_bg_transparent"] = bg_transparent
             st.session_state["gif_filename"] = filename
             st.session_state["gif_size_kb"] = size_kb
+            expected_negative_frames = (
+                negative_duration * (2 if flash_on_negative else 1)
+                if go_negative
+                else 0
+            )
+            expected_total_frames = duration + 1 + expected_negative_frames
+            frames = list(ImageSequence.Iterator(Image.open(io.BytesIO(gif_bytes))))
+            frame_count = len(frames)
+            negative_diff_pixels = None
+            last_negative_has_color = None
+            last_negative_preview = None
+            expected_last_label = None
+            if frame_count > duration:
+                canvas = Image.new("RGBA", frames[0].size, (0, 0, 0, 0))
+                composited = []
+                for f in frames:
+                    disposal = f.info.get("disposal", 0)
+                    rgba = f.convert("RGBA")
+                    canvas = canvas.copy()
+                    canvas.alpha_composite(rgba)
+                    composited.append(canvas)
+                    if disposal == 2:
+                        canvas = Image.new("RGBA", frames[0].size, (0, 0, 0, 0))
+                base_frame = composited[duration]
+                last_frame = composited[-1]
+                if go_negative and negative_duration > 0:
+                    expected_last_label = (
+                        f"-{negative_duration // 60}:{negative_duration % 60:02d}"
+                    )
+                    preview_buf = io.BytesIO()
+                    last_frame.save(preview_buf, format="PNG")
+                    last_negative_preview = preview_buf.getvalue()
+                diff_count = 0
+                for (r1, g1, b1, a1), (r2, g2, b2, a2) in zip(
+                    base_frame.getdata(), last_frame.getdata()
+                ):
+                    if abs(r1 - r2) > 8 or abs(g1 - g2) > 8 or abs(b1 - b2) > 8:
+                        diff_count += 1
+                negative_diff_pixels = diff_count
+                last_negative_has_color = False
+                for r, g, b, a in last_frame.getdata():
+                    if a == 0:
+                        continue
+                    if abs(r - 255) <= 12 and abs(g - 51) <= 12 and abs(b - 51) <= 12:
+                        last_negative_has_color = True
+                        break
+            st.session_state["gif_settings"] = {
+                "duration": duration,
+                "go_negative": go_negative,
+                "negative_duration": negative_duration,
+                "style": style,
+                "width": int(gif_width),
+                "height": int(gif_height),
+                "bg_color": "transparent" if bg_transparent else bg_color,
+                "fg_color": fg_color,
+                "negative_color": negative_color,
+                "negative_ring_color": negative_ring_color,
+                "ring_bg_color": ring_bg_color,
+                "ring_fg_color": ring_fg_color,
+                "flash_on_negative": flash_on_negative,
+                "flash_color": flash_color,
+                "font_path": font_path,
+                "font_size": font_size,
+                "auto_trim": auto_trim,
+                "warning_at": warning_at,
+                "warning_fg_color": warning_fg_color,
+                "warning_ring_color": warning_ring_color,
+                "critical_at": critical_at,
+                "critical_fg_color": critical_fg_color,
+                "critical_ring_color": critical_ring_color,
+                "flash_ring_on_negative": flash_ring_on_negative,
+                "ring_flash_color": ring_flash_color,
+                "loop": infinite,
+                "expected_frames": expected_total_frames,
+                "actual_frames": frame_count,
+                "negative_diff_pixels": negative_diff_pixels,
+                "last_negative_has_color": last_negative_has_color,
+                "expected_last_label": expected_last_label,
+            }
+            if last_negative_preview:
+                st.session_state["last_negative_preview"] = last_negative_preview
 
     # Render from session_state — persists across all widget interactions
     if "gif_bytes" in st.session_state:
@@ -270,6 +427,21 @@ with col_preview:
             mime="image/gif",
             use_container_width=True,
         )
+
+        if "gif_settings" in st.session_state:
+            with st.expander("Settings"):
+                st.code(
+                    json.dumps(st.session_state["gif_settings"], indent=2),
+                    language="json",
+                )
+        if "last_negative_preview" in st.session_state:
+            with st.expander("Verification"):
+                st.caption(
+                    f"Expected last label: {st.session_state['gif_settings'].get('expected_last_label')}"
+                )
+                st.image(
+                    st.session_state["last_negative_preview"], caption="Last frame"
+                )
     else:
         example_path = Path("examples") / f"{style}_example.gif"
         if example_path.exists():

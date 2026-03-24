@@ -3,7 +3,7 @@
 ## Project Overview
 
 Python tool that generates animated countdown timer GIFs for use in slides/presentations.
-Three interfaces share a single core library:
+Three interfaces share a single core library (Streamlit is primary; Flask is legacy):
 
 | File | Purpose |
 |---|---|

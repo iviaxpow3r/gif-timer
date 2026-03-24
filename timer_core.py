@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 
-
 # --- Font utilities ---
 
 SYSTEM_FONT_DIRS = [
@@ -169,9 +168,8 @@ def render_digital_frame(
     text = format_time(seconds)
 
     if font_size is None:
-        # Use a sample text to get consistent sizing across all frames
-        sample = format_time(0)  # "0:00" as baseline
-        font_size = _auto_font_size(sample, width, height, font_path)
+        sample = format_time(-1)
+        font_size = _auto_font_size(sample, width, height, font_path, max_h_ratio=0.75)
 
     font = resolve_font(font_path, font_size)
     bbox = font.getbbox(text)
@@ -222,15 +220,14 @@ def render_circular_frame(
         start_angle = -90
         end_angle = start_angle + sweep
         draw.arc(bbox_ring, start_angle, end_angle, fill=ring_fg, width=ring_width)
-    elif seconds <= 0:
-        # No remaining arc when negative
-        pass
+    elif seconds < 0 and ring_fg[3] > 0:
+        draw.arc(bbox_ring, 0, 360, fill=ring_fg, width=ring_width)
 
     # Draw time text in center
     text = format_time(seconds)
     if font_size is None:
         inner_size = min(width, height) - 2 * margin - 2 * ring_width
-        sample = format_time(0)
+        sample = format_time(-1)
         font_size = _auto_font_size(
             sample, inner_size, inner_size, font_path, max_h_ratio=0.3
         )
@@ -260,6 +257,7 @@ def generate_timer_gif(
     bg_color="#000000",
     fg_color="#FFFFFF",
     negative_color="#FF3333",
+    negative_ring_color=None,
     ring_bg_color="#333333",
     ring_fg_color="#00CC66",
     flash_on_negative=True,
@@ -288,7 +286,8 @@ def generate_timer_gif(
         fps: Frames per second (1 = one frame per second).
         bg_color: Background color (hex, tuple, "transparent").
         fg_color: Text/ring color during countdown.
-        negative_color: Text/ring color when past zero.
+        negative_color: Text color when past zero.
+        negative_ring_color: Ring color when past zero (defaults to negative_color).
         ring_bg_color: Circular style depleted ring color.
         ring_fg_color: Circular style remaining ring color.
         flash_on_negative: Flash text when negative.
@@ -313,7 +312,7 @@ def generate_timer_gif(
 
     # Calculate total frames
     # Count down from duration to 1, then show 0:00, then negative
-    neg_frames = negative_duration if isinstance(negative_duration, int) else 0
+    neg_frames = int(negative_duration) if negative_duration else 0
 
     total_seconds = list(range(duration, -1, -1))  # duration down to 0
     if neg_frames > 0:
@@ -321,11 +320,25 @@ def generate_timer_gif(
 
     transparent_bg = is_transparent(bg_color)
 
+    # --- Smart flash defaults for ring ---
+    # When ring_flash_color is not set and the ring would be invisible,
+    # default to negative_color so the ring flash is visible.
+    if ring_flash_color is None and (
+        ring_fg_color is None or is_transparent(ring_fg_color)
+    ):
+        ring_flash_color = negative_color
+
+    if negative_ring_color is None:
+        negative_ring_color = negative_color
+
     # Pre-parse warning/critical colors if thresholds are set
     warning_fg = parse_color(warning_fg_color) if warning_fg_color else None
     warning_ring = parse_color(warning_ring_color) if warning_ring_color else None
     critical_fg = parse_color(critical_fg_color) if critical_fg_color else None
     critical_ring = parse_color(critical_ring_color) if critical_ring_color else None
+
+    # Detect blink mode: flash_color is transparent means "hide everything on flash frames"
+    blink_mode = is_transparent(flash_color)
 
     for sec in total_seconds:
         is_neg = sec < 0
@@ -334,13 +347,20 @@ def generate_timer_gif(
         if is_neg and flash_on_negative:
             # Flash at 0.5s intervals: 2 sub-frames per negative second
             half_ms = frame_ms // 2
-            if flash_ring_on_negative:
+            if blink_mode:
+                if flash_ring_on_negative:
+                    sub_ring_alt = (
+                        ring_flash_color if ring_flash_color else negative_ring_color
+                    )
+                else:
+                    sub_ring_alt = ring_fg_color
+            elif flash_ring_on_negative:
                 sub_ring_alt = ring_flash_color if ring_flash_color else flash_color
             else:
                 sub_ring_alt = ring_fg_color
             for sub_fg, sub_ring in [
                 (flash_color, sub_ring_alt),
-                (negative_color, negative_color),
+                (negative_color, negative_ring_color),
             ]:
                 if style == "circular":
                     frame = render_circular_frame(
@@ -371,7 +391,7 @@ def generate_timer_gif(
 
         elif is_neg:
             current_fg = negative_color
-            current_ring_fg = negative_color
+            current_ring_fg = negative_ring_color
         else:
             # Non-negative: apply warning/critical color transitions
             current_fg = fg_color
@@ -422,11 +442,15 @@ def generate_timer_gif(
     if not frames:
         raise ValueError("No frames generated")
 
-    # Auto-trim: compute bounding box of non-transparent pixels across all frames
     if auto_trim and transparent_bg:
         bbox = None
+        canvas = Image.new("RGBA", frames[0].size, (0, 0, 0, 0))
         for f in frames:
-            f_bbox = f.getbbox()
+            disposal = f.info.get("disposal", 0)
+            rgba = f.convert("RGBA")
+            canvas = canvas.copy()
+            canvas.alpha_composite(rgba)
+            f_bbox = canvas.getbbox()
             if f_bbox:
                 if bbox is None:
                     bbox = list(f_bbox)
@@ -435,80 +459,40 @@ def generate_timer_gif(
                     bbox[1] = min(bbox[1], f_bbox[1])
                     bbox[2] = max(bbox[2], f_bbox[2])
                     bbox[3] = max(bbox[3], f_bbox[3])
+            if disposal == 2:
+                canvas = Image.new("RGBA", frames[0].size, (0, 0, 0, 0))
 
         if bbox and bbox[2] > bbox[0] and bbox[3] > bbox[1]:
             frames = [f.crop(bbox) for f in frames]
 
     # Convert to mode suitable for GIF
     if transparent_bg:
-        # For transparent GIFs we need P-mode with a designated transparent palette index.
-        #
-        # Why not index 255?
-        #   quantize(colors=255) produces valid indices 0–254.  Writing index 255 via
-        #   putdata() is out-of-range and causes Pillow's GIF encoder to misbehave
-        #   (it remaps the palette and the transparency GCE no longer matches the pixels).
-        #
-        # Strategy: reserve index 0 for transparency.
-        #   1. Quantize RGB content to 255 colors  → internal indices 0–254
-        #   2. Prepend a transparent placeholder entry, shifting content to indices 1–255
-        #   3. Map transparent pixels to index 0
-        #   4. Save with transparency=0
-        #   5. Read back the actual transparency index Pillow settled on (it may still
-        #      remap during encoding) and patch the GIF Logical Screen Descriptor byte 11
-        #      (background color index) so disposal=2 correctly restores transparency.
-        gif_frames = []
-        for f in frames:
-            alpha = f.split()[3]
-
-            # Quantize RGB to 255 content colors (yields pixel values 0–254)
-            p_img = f.convert("RGB").quantize(colors=255)
-            old_palette = (
-                p_img.getpalette()
-            )  # always 256 entries × 3 bytes = 768 values
-
-            # New 256-entry palette: slot 0 = transparent placeholder (0,0,0),
-            # slots 1–255 = the 255 original content colors shifted up by one.
-            new_palette = [0, 0, 0] + old_palette[: 255 * 3]
-            p_img.putpalette(new_palette)
-
-            # Remap pixels: transparent areas → 0, content → original_index + 1
-            p_data = list(p_img.getdata())
-            a_data = list(alpha.getdata())
-            p_img.putdata([0 if a <= 128 else p + 1 for p, a in zip(p_data, a_data)])
-
-            gif_frames.append(p_img)
+        gif_frames = [f.convert("RGBA") for f in frames]
 
         buf = io.BytesIO()
-        gif_frames[0].save(
-            buf,
-            format="GIF",
-            save_all=True,
-            append_images=gif_frames[1:],
-            duration=frame_durations,
-            loop=0 if is_infinite else 1,
-            transparency=0,
-            disposal=2,
-        )
-        gif_data = bytearray(buf.getvalue())
-
-        # Pillow may remap palette indices during encoding; read back the transparency
-        # index it actually wrote to the GCE, then patch LSD byte 11 to match so
-        # disposal=2 restores to the correct (transparent) background color.
-        saved_check = Image.open(io.BytesIO(bytes(gif_data)))
-        actual_trans_idx = saved_check.info.get("transparency", 0)
-        gif_data[11] = actual_trans_idx
-
+        save_kwargs = {
+            "format": "GIF",
+            "save_all": True,
+            "append_images": gif_frames[1:],
+            "duration": frame_durations,
+            "disposal": 2,
+            "optimize": False,
+        }
+        if is_infinite:
+            save_kwargs["loop"] = 0
+        gif_frames[0].save(buf, **save_kwargs)
         with open(output_path, "wb") as gif_out:
-            gif_out.write(gif_data)
+            gif_out.write(buf.getvalue())
     else:
         # Non-transparent: simpler path
         rgb_frames = [f.convert("RGB") for f in frames]
-        rgb_frames[0].save(
-            output_path,
-            save_all=True,
-            append_images=rgb_frames[1:],
-            duration=frame_durations,
-            loop=0 if is_infinite else 1,
-        )
+        save_kwargs = {
+            "save_all": True,
+            "append_images": rgb_frames[1:],
+            "duration": frame_durations,
+        }
+        if is_infinite:
+            save_kwargs["loop"] = 0
+        rgb_frames[0].save(output_path, **save_kwargs)
 
     return output_path

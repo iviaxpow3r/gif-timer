@@ -61,8 +61,9 @@ def api_generate():
     # Negative time
     go_negative = data.get("go_negative", False)
     infinite = data.get("infinite", False)
-    if go_negative:
-        negative_duration = int(data.get("negative_duration", 10))
+    negative_duration_raw = data.get("negative_duration", 0)
+    if go_negative or int(negative_duration_raw or 0) > 0:
+        negative_duration = int(negative_duration_raw) if negative_duration_raw else 10
     else:
         negative_duration = 0
 
