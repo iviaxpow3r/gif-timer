@@ -50,17 +50,26 @@ def resolve_font(font_path, font_size):
             if found:
                 return ImageFont.truetype(found, font_size)
         if BUNDLED_FONT_PATH.is_file():
-            return ImageFont.truetype(str(BUNDLED_FONT_PATH), font_size)
+            try:
+                return ImageFont.truetype(str(BUNDLED_FONT_PATH), font_size)
+            except OSError:
+                return ImageFont.load_default()
         return ImageFont.load_default()
 
     # Direct path
     if os.path.isfile(font_path):
-        return ImageFont.truetype(font_path, font_size)
+        try:
+            return ImageFont.truetype(font_path, font_size)
+        except OSError:
+            return ImageFont.load_default()
 
     # Search by name
     found = _find_font_by_name(font_path)
     if found:
-        return ImageFont.truetype(found, font_size)
+        try:
+            return ImageFont.truetype(found, font_size)
+        except OSError:
+            return ImageFont.load_default()
 
     return ImageFont.load_default()
 
