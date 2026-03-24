@@ -17,12 +17,21 @@ SYSTEM_FONT_DIRS = [
     "/Library/Fonts/",
     os.path.expanduser("~/Library/Fonts/"),
 ]
+BUNDLED_FONT_DIR = Path(__file__).resolve().parent / "assets" / "fonts"
+BUNDLED_FONT_PATH = BUNDLED_FONT_DIR / "Inter-Regular.ttf"
+
+
+def _iter_font_dirs():
+    dirs = list(SYSTEM_FONT_DIRS)
+    if BUNDLED_FONT_DIR.is_dir():
+        dirs.append(str(BUNDLED_FONT_DIR))
+    return dirs
 
 
 def scan_system_fonts():
     """Return dict of {display_name: path} for available .ttf/.otf/.ttc fonts."""
     fonts = {}
-    for font_dir in SYSTEM_FONT_DIRS:
+    for font_dir in _iter_font_dirs():
         if not os.path.isdir(font_dir):
             continue
         for fname in os.listdir(font_dir):
@@ -40,6 +49,8 @@ def resolve_font(font_path, font_size):
             found = _find_font_by_name(name)
             if found:
                 return ImageFont.truetype(found, font_size)
+        if BUNDLED_FONT_PATH.is_file():
+            return ImageFont.truetype(str(BUNDLED_FONT_PATH), font_size)
         return ImageFont.load_default()
 
     # Direct path
@@ -57,7 +68,7 @@ def resolve_font(font_path, font_size):
 def _find_font_by_name(name):
     """Search system font dirs for a font matching the given name."""
     name_lower = name.lower()
-    for font_dir in SYSTEM_FONT_DIRS:
+    for font_dir in _iter_font_dirs():
         if not os.path.isdir(font_dir):
             continue
         for fname in os.listdir(font_dir):
@@ -229,7 +240,7 @@ def render_circular_frame(
         inner_size = min(width, height) - 2 * margin - 2 * ring_width
         sample = format_time(-1)
         font_size = _auto_font_size(
-            sample, inner_size, inner_size, font_path, max_h_ratio=0.3
+            sample, inner_size, inner_size, font_path, max_h_ratio=0.36
         )
 
     font = resolve_font(font_path, font_size)
