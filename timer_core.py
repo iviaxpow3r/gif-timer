@@ -28,6 +28,19 @@ def _iter_font_dirs():
     return dirs
 
 
+def _get_pil_font_path():
+    pil_dir = Path(ImageFont.__file__).resolve().parent
+    candidates = [
+        pil_dir / "DejaVuSans.ttf",
+        pil_dir / "fonts" / "DejaVuSans.ttf",
+        pil_dir / "Fonts" / "DejaVuSans.ttf",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
 def scan_system_fonts():
     """Return dict of {display_name: path} for available .ttf/.otf/.ttc fonts."""
     fonts = {}
@@ -52,6 +65,12 @@ def resolve_font(font_path, font_size):
         if BUNDLED_FONT_PATH.is_file():
             try:
                 return ImageFont.truetype(str(BUNDLED_FONT_PATH), font_size)
+            except OSError:
+                pass
+        pil_font_path = _get_pil_font_path()
+        if pil_font_path:
+            try:
+                return ImageFont.truetype(pil_font_path, font_size)
             except OSError:
                 return ImageFont.load_default()
         return ImageFont.load_default()
