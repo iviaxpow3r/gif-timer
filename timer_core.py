@@ -12,10 +12,18 @@ from PIL import Image, ImageDraw, ImageFont, ImageColor
 # --- Font utilities ---
 
 SYSTEM_FONT_DIRS = [
+    # macOS
     "/System/Library/Fonts/",
     "/System/Library/Fonts/Supplemental/",
     "/Library/Fonts/",
     os.path.expanduser("~/Library/Fonts/"),
+    # Linux (Streamlit Cloud / Ubuntu)
+    "/usr/share/fonts/",
+    "/usr/share/fonts/truetype/",
+    "/usr/share/fonts/truetype/dejavu/",
+    "/usr/share/fonts/truetype/liberation/",
+    "/usr/local/share/fonts/",
+    os.path.expanduser("~/.fonts/"),
 ]
 BUNDLED_FONT_DIR = Path(__file__).resolve().parent / "assets" / "fonts"
 BUNDLED_FONT_PATH = BUNDLED_FONT_DIR / "Inter-Regular.ttf"
