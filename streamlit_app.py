@@ -45,11 +45,11 @@ with col_controls:
     minutes = c1.number_input("Minutes", min_value=0, max_value=60, value=1)
     seconds = c2.number_input("Seconds", min_value=0, max_value=59, value=0)
     duration = int(minutes) * 60 + int(seconds)
-    infinite = st.checkbox("Loop")
+    infinite = st.checkbox("Loop", key="loop")
 
     # --- Negative Time ---
     st.subheader("Negative Time")
-    go_negative = st.checkbox("Continue counting past zero")
+    go_negative = st.checkbox("Continue counting past zero", key="go_negative")
     negative_duration = 0
     flash_on_negative = True
     flash_ring_on_negative = True
@@ -60,7 +60,13 @@ with col_controls:
 
     if go_negative:
         negative_duration = int(
-            st.number_input("Seconds past zero", min_value=1, max_value=300, value=10)
+            st.number_input(
+                "Seconds past zero",
+                min_value=1,
+                max_value=300,
+                value=10,
+                key="negative_duration",
+            )
         )
 
     # --- Size & Font ---
